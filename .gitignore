@@ -1,0 +1,6 @@
+# Ignore node_modules and other temp files
+node_modules/
+*.log
+data.json
+.env
+.DS_Store

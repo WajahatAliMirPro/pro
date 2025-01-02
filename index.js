@@ -5,36 +5,51 @@ import random from "random";
 
 const path = "./data.json";
 
-const markCommit = (x, y) => {
-  const date = moment()
-    .subtract(1, "y")
-    .add(1, "d")
-    .add(x, "w")
-    .add(y, "d")
-    .format();
+// Loop from Jan 2023 to Jun 2025
+const start = moment("2023-01-01");
+const end = moment("2025-06-30");
 
-  const data = {
-    date: date,
+const months = [];
+
+while (start.isBefore(end)) {
+  months.push(start.clone()); // Save a copy
+  start.add(1, "month");
+}
+
+const doMonthlyCommits = (index = 0) => {
+  if (index >= months.length) return simpleGit().push();
+
+  const month = months[index];
+  const daysInMonth = month.daysInMonth();
+  const commitsThisMonth = random.int(1, 5); // 1–5 commits per month
+
+  const commitDates = new Set();
+  while (commitDates.size < commitsThisMonth) {
+    commitDates.add(random.int(1, daysInMonth));
+  }
+
+  const dates = [...commitDates].map(day =>
+    month.clone().date(day).hour(random.int(9, 17)).minute(random.int(0, 59))
+  );
+
+  const makeCommitsForMonth = (i = 0) => {
+    if (i >= dates.length) return doMonthlyCommits(index + 1);
+
+    const date = dates[i].format();
+    const data = { date };
+
+    console.log(`Committing on: ${date}`);
+
+    jsonfile.writeFile(path, data, () => {
+      simpleGit()
+        .add([path])
+        .commit(`Random commit on ${date}`, { "--date": date }, () =>
+          makeCommitsForMonth(i + 1)
+        );
+    });
   };
 
-  jsonfile.writeFile(path, data, () => {
-    simpleGit().add([path]).commit(date, { "--date": date }).push();
-  });
+  makeCommitsForMonth();
 };
 
-const makeCommits = (n) => {
-  if(n===0) return simpleGit().push();
-  const x = random.int(0, 54);
-  const y = random.int(0, 6);
-  const date = moment().subtract(1, "y").add(1, "d").add(x, "w").add(y, "d").format();
-
-  const data = {
-    date: date,
-  };
-  console.log(date);
-  jsonfile.writeFile(path, data, () => {
-    simpleGit().add([path]).commit(date, { "--date": date },makeCommits.bind(this,--n));
-  });
-};
-
-makeCommits(100);
+doMonthlyCommits();
